@@ -71,13 +71,13 @@ const HeaderPage = () => {
             <Breadcrumb>
                 {list.map((pathName, index) => {
                     if (!index) return (
-                        <Breadcrumb.Item onClick={() => history.push('/')} >
+                        <Breadcrumb.Item key="home" onClick={() => history.push('/')} >
                             <HomeOutlined />
                         </Breadcrumb.Item>
                     )
                     if (!pathName) return null;
                     return (
-                        <Breadcrumb.Item onClick={() => index !== list.length - 1 && history.push(`/${pathName}/`)}>
+                        <Breadcrumb.Item key={pathName}  onClick={() => index !== list.length - 1 && history.push(`/${pathName}/`)}>
                             {pathName}
                         </Breadcrumb.Item>
                     )

@@ -1,43 +1,50 @@
 import React, { useState, useEffect } from "react";
-import { get } from "lodash";
-import { Pagination, Input } from "antd";
-import moment from "moment";
+import { Pagination, Input, Button, Upload } from "antd";
 import {
-    PlusCircleOutlined, DeleteOutlined, FilterOutlined
+    PlusOutlined, DeleteOutlined, FilterOutlined, ReloadOutlined, UploadOutlined
 } from "@ant-design/icons";
+import { get } from 'lodash';
+import axios from 'axios';
 
 // local com
 import { openNotificationWithIcon } from "./helper/notification_antd";
 import { handleErr } from "./helper/handle_err_request";
 import { CardCustom, TableCustom } from "./helper/styled_component";
-import ModalAction from './modal_action';
 import ModalForm from './modal_form';
+import FilterForm from './filter_form';
 // 
-import { columnInitTable, action, jsonFormInit, TITLE_TABLE, ACT_TYPE } from './const';
+import {
+    columnInitTable, jsonFormInit, jsonFormFilterInit,
+    TITLE_TABLE, ACT_TYPE
+} from './const';
 import * as services from "./services";
 
-const { Search } = Input;
-
 const TableFunction = (props) => {
-
     const [loading, setLoading] = useState(false);
     const [dataTable, setDataTable] = useState([]);
     // data handle
     const [jsonForm, setJsonForm] = useState(jsonFormInit);
+    const [jsonFormFilter, setJsonFormFiter] = useState(jsonFormFilterInit);
     const [selectedRow, setSelectRow] = useState([]);
     // Pagination
     const [pageInfo, setPageInfo] = useState({
         current: 1,
-        number_of_page: 20,
-    })
+        number_of_page: 15,
+    });
+    console.log('pageInfo', pageInfo)
     // modal
     const [showFilter, setShowFilter] = useState(false);
-    const [showAction, setShowAction] = useState(false);
     const [showFormData, setShowFormData] = useState(false);
 
     useEffect(() => {
-        _requestDataTable(pageInfo);
+        _requestDataTable();
     }, []);
+    const _handleChangePage = (current, number_of_page) => {
+        _requestDataTable({
+            current,
+            number_of_page,
+        })
+    }
 
     const _handleChangeJsonForm = React.useCallback((column, data) => {
         const newJsonForm = jsonForm.map(i => {
@@ -49,91 +56,54 @@ const TableFunction = (props) => {
 
     const _requestDataTable = async (params = {}) => {
         try {
+            const pageQuery = {
+                current: pageInfo.current,
+                number_of_page: pageInfo.number_of_page,
+            };
+            const query = {
+                ...pageQuery,
+                ...params,
+            };
             setLoading(true);
-            const { data } = await services.get(params);
+            const { data } = await services.get(query);
             setLoading(false);
+            let dataTableConvert = [];
             if (data.data) {
-                setPageInfo(data.page_info)
-                setDataTable(data.data.map(i => {
+                setPageInfo({ ...pageInfo, ...data.page_info });
+                dataTableConvert = data.data.map(i => {
                     i.key = i.id
                     return i
-                }))
-            } else {
-                setDataTable([]);
+                })
             }
+            setDataTable(dataTableConvert);
+            return dataTableConvert;
         } catch (err) {
             setLoading(false);
-            handleErr(err)
+            handleErr(err);
         }
 
     }
-
-
-    const _handleSubmitForm = async ({ data = null, type = null } = {}) => {
-        try {
-            if (!data || type) return 0;
-            setLoading(true);
-            if (type === ACT_TYPE.ADD) {
-                await services.post(data);
-                openNotificationWithIcon("success", "Thêm mới thành công")
-            } else if (type === ACT_TYPE.EDIT) {
-                await services.patch(data);
-                openNotificationWithIcon("success", "Chỉnh sửa thành công")
-            } else if (type === ACT_TYPE.DEL) {
-                const confirm = window.confirm("Xác nhận xoá?")
-                if (confirm) {
-                    await services.deleteMany(data);
-                    openNotificationWithIcon("success", "Xoá thành công")
-                }
-            }
-            setLoading(false);
-        } catch (error) {
-            setLoading(false);
-            handleErr(error)
-        }
-    }
-
-    const handleSelectAction = (val) => {
-        if (val && val.type === ACT_TYPE.EDIT) {
-            const dataEdit = {
-                ...val.data
-            }
-            if (dataEdit.timestamp) dataEdit.timestamp = moment(dataEdit.timestamp);
-            setShowFormData({
-                data: dataEdit,
-                type: ACT_TYPE.EDIT,
-            })
-            setShowAction(false);
-
-        } else if (val.type === ACT_TYPE.DEL) {
-            _handleSubmitForm({
-                data: get(val, 'data', null),
-                type: ACT_TYPE.DEL,
-            })
-
-        } else if (val.type === ACT_TYPE.DUP) {
-            const dataEdit = { ...val.data }
-            if (dataEdit.timestamp) dataEdit.timestamp = moment(dataEdit.timestamp);
-            setShowFormData({
-                data: dataEdit,
-                type: ACT_TYPE.DUP,
-            })
-            setShowAction(false);
-        }
-    }
+    const _handleDel = React.useCallback(() => {
+        console.log(selectedRow)
+    }, [selectedRow])
 
     return (
         <div style={{}}>
             <CardCustom
                 title={TITLE_TABLE}
-                extra={<Extra showDel={selectedRow && selectedRow[0]} _onFilter={() => setShowFilter(!showFilter)} _onClickAdd={() => setShowFormData({ type: ACT_TYPE.ADD })}
+                extra={<Extra
+                    loading={loading} showDel={selectedRow && selectedRow[0]}
+                    _onReload={_requestDataTable}
+                    _handleDel={_handleDel}
+                    _onFilter={() => setShowFilter(!showFilter)}
+                    _onClickAdd={() => setShowFormData({ type: ACT_TYPE.ADD })}
                 />}>
-                {!showFilter ? null : <FilterForm />}
                 <TableCustom
                     dataSource={dataTable}
                     columns={columnInitTable}
+
                     loading={loading}
-                    scroll={{ y: 'calc(100vh - 210px)' }}
+                    scroll={{ y: 'calc(100vh - 190px)' }}
                     pagination={false}
 
                     rowSelection={{
@@ -141,90 +111,76 @@ const TableFunction = (props) => {
                         onChange: setSelectRow,
                         selectedRowKeys: selectedRow
                     }}
-                    onRow={(r) => ({
-                        onClick: () => setShowAction(r),
-                    })}
-                />
 
+                    onRow={(r) => ({ onClick: () => setShowFormData({ type: ACT_TYPE.EDIT, data: r }) })}
+                />
                 <Pagination
+                    showSizeChanger
+                    pageSizeOptions={[5, 10, 15, 20, 25, 50, 100]}
                     style={{ marginTop: 10, float: 'right' }}
                     current={pageInfo.current}
-                    onChange={(val) => {
-                        // _handleFilter(val)
-                    }}
+                    onChange={_handleChangePage}
+                    pageSize={Number(pageInfo.number_of_page || 15)}
                     total={pageInfo.total}
-                    showSizeChanger={false}
                     showQuickJumper
                 />
             </CardCustom>
             {/* end table */}
             <ModalForm
-                visible={showFormData}
-                jsonFormInput={jsonForm}
-                onCancel={(isReload) => {
+                visible={showFormData} jsonFormInput={jsonForm}
+                _onClose={(isReload) => {
                     setShowFormData(false);
                     if (isReload) _requestDataTable();
                 }}
-                _handleSubmit={_handleSubmitForm}
-                loading={loading}
             />
-
-            <ModalAction
-                visibleData={showAction}
-                onClose={() => { setShowAction(false) }}
-                listAction={action}
-                _handleSelectAction={handleSelectAction}
+            <FilterForm
+                visible={showFilter} jsonFormInput={jsonFormFilter}
+                _onClose={() => setShowFilter(false)}
+                _onSubmit={_requestDataTable}
             />
         </div>
 
     );
 };
 
-const FilterForm = () => {
-    return (
-        <div>
-            sdfsdf
-        </div>
-    )
-}
-
 const Extra = ({
+    loading = false,
     showDel = false,
     _handleDel = () => { },
     _onClickAdd = () => { },
     _onFilter = () => { },
+    _onReload = () => { },
 }) => {
-    return (<div style={{ display: 'flex', alignItems: 'center', paddingRight: 7, justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', flex: 1 }}>
-            <div style={{ display: 'flex' }}>
-
-                {showDel ?
-                    <DeleteOutlined
-                        onClick={_handleDel}
-                        style={{
-                            fontSize: "25px",
-                            color: "red",
-                        }}
-                    /> : null}
-
-                <PlusCircleOutlined
-                    style={{
-                        fontSize: "25px",
-                        color: "green",
-                        margin: '0px 10px',
-                    }}
-                    onClick={_onClickAdd}
-                />
-                <FilterOutlined
-                    onClick={_onFilter}
-                    style={{
-                        fontSize: "25px",
-                        color: "#2593FC",
-                    }} />
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', paddingRight: 7, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', flex: 1 }}>
+                <div style={{ display: 'flex' }}>
+                    {!showDel ? null : <Button loading={loading} onClick={_handleDel} className="ro-custom" type="text" icon={<DeleteOutlined />} >Xoá item đã chọn</Button>}
+                    <Button loading={loading} onClick={() => _onReload()} className="ro-custom" type="text" icon={<ReloadOutlined />} >Làm mới</Button>
+                    <Button loading={loading} onClick={_onClickAdd} className="ro-custom" type="text" icon={<PlusOutlined />} >Thêm mới</Button>
+                    <Button loading={loading} onClick={_onFilter} className="ro-custom" type="text" icon={<FilterOutlined />} >Bộ lọc</Button>
+                </div>
             </div>
         </div>
-    </div>)
+    )
 }
 
 export default TableFunction;
 
+
+
+// baf1cf064104a8f584bf5bb433574c14
+// const dnd = {
+//     beforeUpload: file => {
+
+//         var form = new FormData();
+//         form.append("image", file);
+
+//         axios.post(
+//             "https://api.imgbb.com/1/upload?key=baf1cf064104a8f584bf5bb433574c14",
+//             form
+//         )
+//             .then((respone) => console.log(respone));
+//         return false;
+//     },
+// };

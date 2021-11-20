@@ -1,17 +1,19 @@
-import {get} from 'lodash';
+import { get } from 'lodash';
 import { openNotificationWithIcon } from './notification_antd';
 
-export const handleErr = (error) => {
+export const handleErr = (error, showNotification) => {
 
     if (error.response) {
         // Request made and server responded
         console.log(error.response.data, '.data');
-        if (get(error, 'response.data.msg', '')) {
-            openNotificationWithIcon("error", get(error, 'response.data.msg', ''));
+        const msg = get(error, 'response.data.msg', '') || get(error, 'response.data.message', '');
+        if (showNotification) openNotificationWithIcon("error", msg);
+        return {
+            msg,
+            status: error.response.status
         }
-
-        console.log(error.response.status, '.status');
-        console.log(error.response.headers, '.headers');
+        // console.log(error.response.status, '.status');
+        // console.log(error.response.headers, '.headers');
     } else if (error.request) {
         // The request was made but no response was received
         console.log(error.request);

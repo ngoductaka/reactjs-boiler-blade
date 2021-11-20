@@ -10,8 +10,6 @@ import {
 } from '../helper/redux/slice_redux';
 import { authServices } from './services';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config/storage_key';
-import { history } from '../helper/request/api_client';
-import { ROUTES } from '../config/route';
 
 const initialState = {};
 
@@ -75,7 +73,6 @@ export const requestLogout = (body) => async (dispatch) => {
 // SELECTOR
 
 export const isLoginSelector = state => {
-    console.log(state, 'ddd')
     return state.app.isLogin
 };
 

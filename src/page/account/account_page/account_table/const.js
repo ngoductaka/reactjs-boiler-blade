@@ -11,8 +11,8 @@ export const TITLE_TABLE = "Accounts"
 export const columnInitTable = [
   {
     title: "Mã đăng nhập",
-    key: "id",
-    dataIndex: 'id',
+    key: "username",
+    dataIndex: 'username',
   },
 
   {
@@ -54,10 +54,16 @@ export const columnInitTable = [
   //     dataIndex: 'notes',
   // },
 ];
+export const jsonFormFilterInit = [
+  {
+    name: "name",
+    label: "Tên",
+  },
+]
 
 export const jsonFormInit = [
   {
-    name: "id",
+    name: "username",
     label: "Mã đăng nhập",
     rules: [{ required: true }],
   },
@@ -78,13 +84,17 @@ export const jsonFormInit = [
   },
   {
     name: "phone",
+    // type: 'number',
     label: "Số điện thoại",
+    rules: [{ type: 'number' }]
   },
   {
     name: "role_id",
     label: "Chức năng",
     type: 'select',
-    data: [],
+    data: [{
+      id: '2'
+    }],
     rules: [{ required: true }],
   },
   {

@@ -1,34 +1,31 @@
-import React, { useState } from 'react';
-import { Layout, Menu } from 'antd';
-import {
-    DesktopOutlined,
-    PieChartOutlined, MenuOutlined,
-    FileOutlined,
-    TeamOutlined,
-    UserOutlined,
-} from '@ant-design/icons';
+import React from 'react';
+import { Layout } from 'antd';
 import { images } from '../../helper/static/images';
+import { Wrapper } from './styled';
 
 const App = ({ children, MenuLeft = () => null, BreadCum = () => null }) => {
+    const [collapsed, onCollapse] = React.useState(true);
     return (
-        <div>
+        <Wrapper>
             <Layout style={{ minHeight: '100vh' }}>
                 <Layout.Sider
                     collapsedWidth={50}
-                    trigger={null}
-                    collapsed={true}
+                    width={170}
+                    collapsible collapsed={collapsed} onCollapse={onCollapse}
+                    onMouseLeave={() => onCollapse(true)}
                     style={{
                         overflow: 'auto',
                         height: '100vh',
                         position: 'fixed',
                         left: 0,
                         width: 50,
+                        zIndex: 10,
                     }}
                 >
                     <div style={{
-                        margin: "10px 5px",
+                        margin: "10px 5px", display: 'flex', alignItems: 'center'
                     }}>
-                        <img src={images.favicon} alt="logo" style={{ height: 40, width: 40 }} />
+                        <img src={images.logo_full} alt="logo" style={{ height: 40 }} />
                     </div>
                     <MenuLeft />
                 </Layout.Sider>
@@ -42,19 +39,16 @@ const App = ({ children, MenuLeft = () => null, BreadCum = () => null }) => {
                     <Layout.Content style={{
                         margin: '5px 5px',
                         overflow: 'scroll',
-                        //  background: '#fff',
-                        // boxShadow: '0px 6px 14px 2px #aaa',
                         borderRadius: 10,
                         height: 'calc(100vh - 35px)',
-
-                        // display: 'flex', flexDirection: 'column',
+                        fontSize: 14,
                     }}>
                         {children}
                     </Layout.Content>
                 </Layout>
             </Layout>
 
-        </div>
+        </Wrapper>
     )
 };
 

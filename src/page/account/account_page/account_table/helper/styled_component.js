@@ -17,8 +17,13 @@ export const CardCustom = styled(Card)`
     }
 `;
 export const TableCustom = styled(Table)`
-
-`
+    .ant-table-cell {
+        padding: 7px 10px;
+    }
+    .ant-table-tbody > tr:hover td{
+        background: #ddd;
+    }
+`;
 
 export const TableCustom_ = styled(Table)`
     td.ant-table-cell {
